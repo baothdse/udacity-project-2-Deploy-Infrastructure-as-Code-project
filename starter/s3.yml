@@ -1,0 +1,46 @@
+Description: CD12352 - Infrastructure as Code Project - S3 Bucket
+
+Parameters:
+
+  EnvironmentName:
+    Description: An environment name that will be prefixed to resource names
+    Type: String
+  BucketName:
+    Type: String
+    Default: udacity-devops-project-2-cd12352
+    Description: Name of the S3 bucket
+
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      AccessControl: Private
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Status: "Enabled"
+            NoncurrentVersionExpirationInDays: 10
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+
+Outputs:
+
+  S3Bucket: 
+    Description: A reference to the created S3 Bucket
+    Value: !Ref S3Bucket
+    Export:
+      Name: !Sub ${EnvironmentName}-S3Bucket
+  S3BucketWebsiteURL:
+    Description: A reference to the created S3 Bucket Domain 
+    Value: !GetAtt S3Bucket.WebsiteURL
+    Export:
+      Name: !Sub ${EnvironmentName}-S3BucketWebsiteURL

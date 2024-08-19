@@ -1,0 +1,105 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: CD12352 - Infrastructure as Code Project - Cloudfront
+
+Parameters:
+
+  EnvironmentName:
+    Description: An environment name that will be prefixed to resource names
+    Type: String
+
+Resources:
+
+  # CloudFront Origin Access Identity
+  CloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub "${EnvironmentName} CloudFront Origin Access Identity"
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Fn::ImportValue:
+          !Sub "${EnvironmentName}-S3Bucket"
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontOriginAccessIdentity}'
+            Action: 's3:GetObject'
+            Resource:
+              Fn::Sub:
+                - 'arn:aws:s3:::${BucketName}/*'
+                - BucketName:
+                    Fn::ImportValue: !Sub "${EnvironmentName}-S3Bucket"
+
+  CloudFront:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+        - DomainName:
+            Fn::Sub:
+              - '${BucketName}.s3.${AWS::Region}.amazonaws.com'
+              - BucketName:
+                  Fn::ImportValue: !Sub "${EnvironmentName}-S3Bucket"
+          Id:
+            Fn::ImportValue:
+              !Sub "${EnvironmentName}-S3Bucket"
+          S3OriginConfig:
+            OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
+        - Id: LoadBalancerOrigin
+          DomainName:
+            Fn::ImportValue:
+              !Sub "${EnvironmentName}-ALB-DNS"
+          CustomOriginConfig:
+            HTTPPort: '80'
+            HTTPSPort: '443'
+            OriginProtocolPolicy: http-only
+        Enabled: 'true'
+        Comment: Some comment
+        DefaultRootObject: index.html
+        # Logging:
+        #   IncludeCookies: 'false'
+        #   Bucket: mylogs.s3.amazonaws.comx
+        #   Prefix: myprefix
+        # Aliases:
+        # - mysite.example.com
+        # - yoursite.example.com
+        DefaultCacheBehavior:
+          AllowedMethods:
+          - DELETE
+          - GET
+          - HEAD
+          - OPTIONS
+          - PATCH
+          - POST
+          - PUT
+          TargetOriginId:
+            Fn::ImportValue:
+              !Sub "${EnvironmentName}-S3Bucket"
+          ForwardedValues:
+            QueryString: 'false'
+            Cookies:
+              Forward: none
+          ViewerProtocolPolicy: allow-all
+        PriceClass: PriceClass_200
+        # Restrictions:
+        #   GeoRestriction:
+        #     RestrictionType: whitelist
+        #     Locations:
+        #     - AQ
+        #     - CV
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: 'true'
+
+Outputs:
+
+  DomainName: 
+    Description: A reference to the testvalue
+    Value: !GetAtt CloudFront.DomainName
+    Export:
+      Name: !Sub ${EnvironmentName}-DomainName
