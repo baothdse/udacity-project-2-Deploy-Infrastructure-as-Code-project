@@ -49,6 +49,16 @@ Resources:
             sudo apt-get update -y
             sudo apt-get install nginx -y
             sudo service nginx start
+            # Create a sample index.html file
+            echo "<html>
+            <head>
+              <title>Welcome to NGINX on EC2!</title>
+            </head>
+            <body>
+              <h1>Hello, World!</h1>
+              <p>This is a sample index.html page served by NGINX on an EC2 instance.</p>
+            </body>
+            </html>" | sudo tee /var/www/html/index.html
         ImageId: ami-0557a15b87f6559cf
         SecurityGroupIds:
           - !Ref WebServerSecGroup
