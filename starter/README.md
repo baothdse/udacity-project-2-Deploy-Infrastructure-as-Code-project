@@ -43,3 +43,5 @@ Go to 'starter' directory:
     ```
     ./delete.sh uda-s3
     ```
+## Note
+Use this Cloudfront domain name for testing purpose: https://d3nh395uie3x2f.cloudfront.net/
